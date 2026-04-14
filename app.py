@@ -77,20 +77,6 @@ def get_alunos():
         alunos.append(item.to_dict())
     return jsonify(alunos), 200
 
-# rota 02 - método GET - alunos aleatórios
-@app.route("/alunos/aleatorios", methods=['GET'])
-def get_aluno_random():
-    """Retorna um aluno aleatório"""
-    alunos = []
-    lista = db.collection('alunos').stream()
-
-    for item in lista:
-        alunos.append(item.to_dict())
-
-    if not alunos:
-        return jsonify({"error": "Nenhum aluno cadastrado!"}), 404
-
-    return jsonify(random.choice(alunos)), 200
 
 # rota 03 - método GET - retorna aluno pelo CPF
 @app.route("/alunos/<cpf>", methods=['GET'])
