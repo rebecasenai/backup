@@ -26,15 +26,12 @@ ADM_USUARIO = os.getenv("ADM_USUARIO")
 ADM_SENHA = os.getenv("ADM_SENHA")
 
 if os.getenv("VERCEL"):
-    # online na vercel
     cred = credentials.Certificate(json.loads(os.getenv("FIREBASE_CREDENTIALS")))
 else:
     cred = credentials.Certificate("firebase.json")
 
-# carregar as credenciais do firebase
 firebase_admin.initialize_app(cred)
 
-# conectar ao firestore
 db = firestore.client()
 
 @app.route("/", methods=['GET'])
@@ -116,36 +113,24 @@ def post_aluno():
     if not dados or "nome" not in dados or "cpf" not in dados:
         return jsonify({"error": "Dados inválidos ou incompletos! É necessário nome e CPF"}), 400
 
-    # verifica se CPF já existe
+
     cpf_existente = db.collection('alunos').where('cpf', '==', dados["cpf"]).limit(1).get()
     if cpf_existente:
         return jsonify({"error": "CPF já cadastrado!"}), 400
 
     try:
-        # busca pelo contador
         contador_ref = db.collection("contador").document("controle_id")
         contador_doc = contador_ref.get()
-        
-        # verifica se o contador existe
         if contador_doc.exists:
             ultimo_id = contador_doc.to_dict().get("ultimo_id", 0)
         else:
             ultimo_id = 0
             contador_ref.set({"ultimo_id": 0})
-
-        # somar 1 ao ultimo id
         novo_id = ultimo_id + 1
-        # atualizar o id contador
         contador_ref.update({"ultimo_id": novo_id})
-
-        # definir status padrão como "bloqueado"
         status = dados.get("status", "bloqueado")
-        
-        # validar status
         if status not in ["ativo", "bloqueado"]:
             return jsonify({"error": "Status deve ser 'ativo' ou 'bloqueado'"}), 400
-
-        # cadastrar o novo aluno
         db.collection("alunos").add({
             "id": novo_id,
             "nome": dados["nome"],
@@ -164,11 +149,11 @@ def aluno_put(cpf):
     """Altera todos os dados de um aluno"""
     dados = request.get_json()
 
-    # PUT é necessário enviar nome, cpf e status
+
     if not dados or "nome" not in dados or "cpf" not in dados or "status" not in dados:
         return jsonify({"error": "Dados inválidos ou incompletos! É necessário nome, CPF e status"}), 400
 
-    # validar status
+
     if dados["status"] not in ["ativo", "bloqueado"]:
         return jsonify({"error": "Status deve ser 'ativo' ou 'bloqueado'"}), 400
 
@@ -177,13 +162,13 @@ def aluno_put(cpf):
         if not docs:
             return jsonify({"error": "Aluno não encontrado!"}), 404
 
-        # verifica se o novo CPF já existe em outro aluno
+
         if dados["cpf"] != cpf:
             cpf_existente = db.collection('alunos').where('cpf', '==', dados["cpf"]).limit(1).get()
             if cpf_existente:
                 return jsonify({"error": "Novo CPF já está cadastrado para outro aluno!"}), 400
 
-        # pega o 1º e único documento da lista
+
         for doc in docs:
             doc_ref = db.collection("alunos").document(doc.id)
             doc_ref.update({
