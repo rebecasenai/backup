@@ -1,0 +1,421 @@
+openapi: 3.0.0
+info:
+  title: API de Academia
+  version: "1.0.0"
+  description: API para gerenciamento de alunos de academia com autenticação JWT
+  contact:
+    name: Rebeca
+
+servers:
+  - url: http://localhost:5000
+  - url: https://sua-api.vercel.app
+
+paths:
+  /:
+    get:
+      summary: Informações da API
+      responses:
+        '200':
+          description: Dados da API
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api:
+                    type: string
+                    example: "academia"
+                  version:
+                    type: string
+                    example: "1.0"
+                  Author:
+                    type: string
+                    example: "Rebeca"
+
+  /login:
+    post:
+      summary: Realizar login do administrador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - usuario
+                - senha
+              properties:
+                usuario:
+                  type: string
+                  example: "admin"
+                senha:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login realizado com sucesso!"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          description: Erro na requisição
+        '401':
+          description: Usuário ou senha inválidos
+
+  /alunos:
+    get:
+      summary: Listar todos os alunos
+      responses:
+        '200':
+          description: Lista de alunos cadastrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Aluno'
+      tags:
+        - Alunos
+
+    post:
+      summary: Cadastrar novo aluno
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+                - cpf
+              properties:
+                nome:
+                  type: string
+                  example: "João Silva"
+                cpf:
+                  type: string
+                  example: "123.456.789-00"
+                status:
+                  type: string
+                  enum: [ativo, bloqueado]
+                  default: bloqueado
+                  example: "ativo"
+      responses:
+        '201':
+          description: Aluno cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Aluno cadastrado com sucesso!"
+        '400':
+          description: Dados inválidos ou CPF já existe
+        '401':
+          description: Token não autorizado
+      tags:
+        - Alunos
+
+  /alunos/aleatorios:
+    get:
+      summary: Obter um aluno aleatório
+      responses:
+        '200':
+          description: Aluno aleatório encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aluno'
+        '404':
+          description: Nenhum aluno cadastrado
+      tags:
+        - Alunos
+
+  /alunos/status/{status}:
+    get:
+      summary: Filtrar alunos por status
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ativo, bloqueado]
+          description: "Status do aluno (ativo = pagamento em dia, bloqueado = inadimplente)"
+      responses:
+        '200':
+          description: Lista de alunos filtrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Aluno'
+        '400':
+          description: Status inválido
+        '404':
+          description: Nenhum aluno encontrado com este status
+      tags:
+        - Alunos
+
+  /alunos/{cpf}:
+    get:
+      summary: Buscar aluno por CPF
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "CPF do aluno (formato: 123.456.789-00)"
+      responses:
+        '200':
+          description: Aluno encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Aluno'
+        '404':
+          description: Aluno não encontrado
+      tags:
+        - Alunos
+
+    put:
+      summary: Atualizar todos os dados de um aluno
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "CPF atual do aluno"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nome
+                - cpf
+                - status
+              properties:
+                nome:
+                  type: string
+                  example: "João Santos"
+                cpf:
+                  type: string
+                  example: "123.456.789-00"
+                status:
+                  type: string
+                  enum: [ativo, bloqueado]
+                  example: "bloqueado"
+      responses:
+        '200':
+          description: Aluno atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Aluno alterado com sucesso!"
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Token não autorizado
+        '404':
+          description: Aluno não encontrado
+      tags:
+        - Alunos
+
+    patch:
+      summary: Atualizar dados parciais de um aluno
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "CPF do aluno"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:
+                  type: string
+                  example: "João Pereira"
+                cpf:
+                  type: string
+                  example: "111.222.333-44"
+                status:
+                  type: string
+                  enum: [ativo, bloqueado]
+                  example: "ativo"
+      responses:
+        '200':
+          description: Aluno atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Aluno alterado com sucesso!"
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Token não autorizado
+        '404':
+          description: Aluno não encontrado
+      tags:
+        - Alunos
+
+    delete:
+      summary: Deletar um aluno
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "CPF do aluno a ser deletado"
+      responses:
+        '200':
+          description: Aluno deletado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Aluno excluído com sucesso!"
+        '401':
+          description: Token não autorizado
+        '404':
+          description: Aluno não encontrado
+      tags:
+        - Alunos
+
+  /alunos/{cpf}/status:
+    put:
+      summary: Alterar apenas o status do aluno (pagamento)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cpf
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "CPF do aluno"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [ativo, bloqueado]
+                  description: "ativo = pagamento confirmado, bloqueado = inadimplente"
+                  example: "ativo"
+      responses:
+        '200':
+          description: Status alterado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Aluno ativado com sucesso!"
+        '400':
+          description: Status inválido
+        '401':
+          description: Token não autorizado
+        '404':
+          description: Aluno não encontrado
+      tags:
+        - Pagamento
+
+components:
+  schemas:
+    Aluno:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID sequencial do aluno
+          example: 1
+        nome:
+          type: string
+          description: "Nome completo do aluno"
+          example: "João Silva"
+        cpf:
+          type: string
+          description: "CPF do aluno (único)"
+          example: "123.456.789-00"
+        status:
+          type: string
+          enum: [ativo, bloqueado]
+          description: "ativo = pagamento em dia, bloqueado = inadimplente ou sem cadastro"
+          example: "ativo"
+        data_cadastro:
+          type: string
+          format: date-time
+          description: "Data e hora do cadastro"
+          example: "2024-12-15T10:30:00.000Z"
+      required:
+        - id
+        - nome
+        - cpf
+        - status
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Mensagem de erro"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Token JWT obtido no endpoint /login"
+
+tags:
+  - name: Alunos
+    description: Operações relacionadas aos alunos
+  - name: Pagamento
+    description: Operações relacionadas ao status de pagamento

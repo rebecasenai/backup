@@ -1,0 +1,6 @@
+flask
+flask-cors
+firebase-admin
+python-dotenv
+PyJWT
+flasgger 
