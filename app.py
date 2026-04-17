@@ -95,22 +95,18 @@ def get_aluno_by_cpf(cpf):
 def post_aluno():
     """Cadastra um novo aluno na academia"""
     dados = request.get_json()
-
     if not dados or "nome" not in dados or "cpf" not in dados:
         return jsonify({"error": "Dados inválidos ou incompletos! É necessário nome e CPF"}), 400
-
-
     cpf_existente = db.collection('alunos').where('cpf', '==', dados["cpf"]).limit(1).get()
     if cpf_existente:
         return jsonify({"error": "CPF já cadastrado!"}), 400
-
     try:
         contador_ref = db.collection("contador").document("controle_id")
         contador_doc = contador_ref.get()
         if contador_doc.exists:
-            ultimo_id = contador_doc.to_dict().get("ultimo_id", 0)
+            ultimo_id = contador_doc.to_dict().get("ultimo_id", 10)
         else:
-            ultimo_id = 0
+            ultimo_id = 10
             contador_ref.set({"ultimo_id": 0})
         novo_id = ultimo_id + 1
         contador_ref.update({"ultimo_id": novo_id})
@@ -129,6 +125,7 @@ def post_aluno():
     except Exception as e:
         return jsonify({"error": f"Falha ao cadastrar: {str(e)}"}), 400
 
+# rota 05 - método PUT - alteração total
 @app.route("/alunos/<cpf>", methods=['PUT'])
 @token_obrigatorio
 def aluno_put(cpf):
@@ -268,10 +265,8 @@ def alterar_status_aluno(cpf):
     except Exception as e:
         return jsonify({"error": f"Falha na alteração: {str(e)}"}), 400
 
-# =================================
-#         TRATAMENTO DE ERROS
-# =================================
 
+#         TRATAMENTO DE ERROS
 @app.errorhandler(404)
 def erro404(error):
     return jsonify({"error": "Rota não encontrada"}), 404
